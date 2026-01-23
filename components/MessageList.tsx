@@ -1,8 +1,10 @@
-import type { Message } from "../api/types";
+import type { ChatEvent } from "api/streamChat";
+import type { Message } from "api/types";
 
 export function MessageList(props: {
-    messages: Message[];
+    messages: Array<Message>;
     isLoading?: boolean;
+    isStreaming?: boolean;
     error?: string | null;
 }) {
     if (props.isLoading) {
@@ -23,11 +25,11 @@ export function MessageList(props: {
 
     return (
         <div className="space-y-3">
-            {props.messages.map((m) => {
-                const isUser = m.role === "user";
+            {props.messages.map((m, index) => {
+                const isUser = m.role === 'user'
                 return (
                     <div
-                        key={m.id}
+                        key={index}
                         className={["flex", isUser ? "justify-end" : "justify-start"].join(
                             " ",
                         )}
@@ -40,10 +42,10 @@ export function MessageList(props: {
                             ].join(" ")}
                         >
                             <div className="text-[11px] uppercase tracking-wider text-slate-400">
-                                {m.role}
+                                {m.content}
                             </div>
                             <div className="mt-1 whitespace-pre-wrap leading-relaxed text-slate-100">
-                                {m.content}
+
                             </div>
                             <div className="mt-2 text-[11px] text-slate-400">
                                 {new Date(m.createdAt).toLocaleTimeString()}
@@ -52,6 +54,7 @@ export function MessageList(props: {
                     </div>
                 );
             })}
+
         </div>
     );
 }

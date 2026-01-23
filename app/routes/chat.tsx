@@ -28,10 +28,13 @@ export default function ChatPage() {
     const selectedConversationId = useMemo(() => {
         if (activeId) return activeId;
         const first = conversationsQ.data?.conversations?.[0];
-        return first?.id ?? null;
+        return first?.id ?? crypto.randomUUID();
     }, [activeId, conversationsQ.data?.conversations]);
 
-    const messagesQ = useMessages(selectedConversationId);
+
+    const messagesQ = useMessages(selectedConversationId, {
+        enabled: !!activeId
+    });
     const sendM = useSendMessage(selectedConversationId);
 
     function onSelectConversation(id: string) {
@@ -39,10 +42,15 @@ export default function ChatPage() {
     }
 
     function onNewChat() {
-        createConvM.mutate();
+        const id = crypto.randomUUID()
+        createConvM.mutate(id);
     }
 
     function onSend(text: string) {
+        if (!activeId) {
+            const id = crypto.randomUUID()
+            createConvM.mutate(id)
+        }
         sendM.mutate(text);
     }
 
@@ -73,15 +81,15 @@ export default function ChatPage() {
 
                     <div className="overflow-auto p-4">
                         <MessageList
-                            messages={messages}
-                            isLoading={messagesQ.isLoading}
+                            messages={messages ?? []}
+                            isStreaming={sendM.isPending}
                             error={messagesQ.error ? String(messagesQ.error) : null}
                         />
                     </div>
 
                     <div className="border-t border-slate-800 bg-black/10 p-3">
                         <MessageComposer
-                            disabled={!selectedConversationId}
+                            disabled={false}
                             onSend={onSend}
                             isSending={sendM.isPending}
                         />

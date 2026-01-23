@@ -1,7 +1,9 @@
 export type Conversation = {
     id: string;
+    ownerId: string;
     title: string;
-    updatedAt: string; // ISO
+    metadataJson: string;
+    updatedAt: string;
 };
 
 export type Role = "user" | "assistant" | "system";
@@ -11,6 +13,7 @@ export type Message = {
     conversationId: string;
     role: Role;
     content: string;
+    payloadJson: string;
     createdAt: string; // ISO
 };
 
