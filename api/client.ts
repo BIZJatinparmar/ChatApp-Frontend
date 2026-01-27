@@ -27,6 +27,7 @@ export async function apiFetch<T>(
 
     const res = await fetch(url, {
         method: options.method ?? "GET",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
         },

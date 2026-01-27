@@ -13,6 +13,7 @@ export async function streamChat(params: {
 }) {
     const res = await fetch("http://localhost:8000/chat/stream", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params.body),
         signal: params.signal,

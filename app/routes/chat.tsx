@@ -9,6 +9,7 @@ import { useMessages } from "hooks/useMessages";
 import { useSendMessage } from "hooks/useSendMessage";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { queryClient } from "~/queryClient";
 
 export default function ChatPage() {
     const [params, setParams] = useSearchParams();
@@ -19,10 +20,28 @@ export default function ChatPage() {
 
     const createConvM = useMutation({
         mutationFn: createConversation,
-        onSuccess: (data) => {
-            qc.invalidateQueries({ queryKey: ["conversations"] });
-            setParams({ c: data.conversation.id });
+        onMutate: async (data) => {
+            console.log({ conversationData: data })
+            const conversationQueryKey = ["conversations"];
+            await queryClient.cancelQueries({ queryKey: conversationQueryKey })
+            const previousConversations = queryClient.getQueryData(conversationQueryKey)
+            queryClient.setQueryData(conversationQueryKey, (old: unknown) => {
+                if (Array.isArray(old)) {
+                    return [...old, { id: data, title: "" }]
+                }
+                else return []
+            })
+            return previousConversations
         },
+        onError: async (error, newConversation, context) => {
+            console.log(error)
+            queryClient.setQueryData(["conversations"], context?.previousConversations ?? [])
+        },
+        onSuccess: (data) => {
+            setParams({ c: data.conversation.id })
+        }
+
+
     });
 
     const selectedConversationId = useMemo(() => {
@@ -47,8 +66,10 @@ export default function ChatPage() {
     }
 
     function onSend(text: string) {
+
         if (!activeId) {
             const id = crypto.randomUUID()
+            console.log("conversationId", id)
             createConvM.mutate(id)
         }
         sendM.mutate(text);
@@ -75,7 +96,7 @@ export default function ChatPage() {
                             {selectedConversationId ? "Conversation" : "No chat selected"}
                         </div>
                         <div className="mt-1 text-xs text-slate-400">
-                            FastAPI backend + TanStack Query
+                            Chat with your LLM
                         </div>
                     </div>
 

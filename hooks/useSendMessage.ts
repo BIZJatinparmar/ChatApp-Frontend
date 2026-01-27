@@ -10,7 +10,9 @@ export function useSendMessage(conversationId: string) {
 
             return streamChat({
                 body: {
-                    content
+                    message_id: crypto.randomUUID(),
+                    user_content: content,
+                    conversation_id: conversationId
                 },
 
                 onEvent: (ev, id) => {
