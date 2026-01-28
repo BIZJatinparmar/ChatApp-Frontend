@@ -1,9 +1,17 @@
-export type ChatEvent = string
+
+export type ChatEvent = {
+    type: "token" | "error";
+    content?: string;
+    message?: string;
+}
 
 function splitLines(buffer: string) {
     const lines = buffer.split("\n");
-    const tail = lines.pop() ?? "";
-    return { lines, tail };
+    const dataLines = lines
+        .filter(line => line)
+        .map(line => line.trim())
+        .map(line => JSON.parse(line) as ChatEvent);
+    return dataLines;
 }
 
 export async function streamChat(params: {
@@ -32,8 +40,11 @@ export async function streamChat(params: {
         if (done) break;
 
         buffer = decoder.decode(value, { stream: true });
-
-        params.onEvent(buffer, id);
+        const data = splitLines(buffer);
+        console.log(data)
+        for (const dataEvent of data) {
+            params.onEvent(dataEvent, id);
+        }
 
     }
 }

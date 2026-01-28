@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { FileUploadModal } from "./FileUploadModal";
 import type { Conversation } from "../api/types";
 
 export function ConversationList(props: {
@@ -7,6 +9,7 @@ export function ConversationList(props: {
     onNewChat: () => void;
     isLoading?: boolean;
 }) {
+    const [fileUploadModal, setFileUploadModal] = useState(false);
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -17,6 +20,16 @@ export function ConversationList(props: {
                     type="button"
                 >
                     New chat
+                </button>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+                <div className="font-bold tracking-tight">Add File</div>
+                <button
+                    className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 active:scale-[0.99]"
+                    onClick={() => setFileUploadModal(true)}
+                    type="button"
+                >
+                    Upload Files
                 </button>
             </div>
 
@@ -52,6 +65,9 @@ export function ConversationList(props: {
                     })}
                 </ul>
             )}
+
+            <FileUploadModal open={fileUploadModal} onClose={() => setFileUploadModal(false)} />
+
         </div>
     );
 }

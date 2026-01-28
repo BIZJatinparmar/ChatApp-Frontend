@@ -28,7 +28,7 @@ export function useSendMessage(conversationId: string) {
                             if (m.id === id) {
                                 return {
                                     ...m,
-                                    content: m.content + ev
+                                    content: m.content + ev.content
                                 }
                             }
                             return m
@@ -36,7 +36,7 @@ export function useSendMessage(conversationId: string) {
                     } else {
                         newMessages = [...newMessages, {
                             id,
-                            content: ev,
+                            content: ev.content ?? '',
                             conversationId,
                             createdAt: new Date().toISOString(),
                             payloadJson: "",

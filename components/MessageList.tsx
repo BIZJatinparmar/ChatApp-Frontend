@@ -1,5 +1,7 @@
-import type { ChatEvent } from "api/streamChat";
+
 import type { Message } from "api/types";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export function MessageList(props: {
     messages: Array<Message>;
@@ -41,8 +43,8 @@ export function MessageList(props: {
                                 isUser ? "bg-indigo-500/15 border-indigo-500/30" : "",
                             ].join(" ")}
                         >
-                            <div className="text-[11px] uppercase tracking-wider text-slate-400">
-                                {m.content}
+                            <div className="text-[11px] tracking-wider text-slate-400">
+                                <Markdown remarkPlugins={[remarkGfm]}>{m.content}</Markdown>
                             </div>
                             <div className="mt-1 whitespace-pre-wrap leading-relaxed text-slate-100">
 
