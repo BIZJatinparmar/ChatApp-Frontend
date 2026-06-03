@@ -7,17 +7,22 @@ import type {
 
 export async function listMessages(conversationId: string, signal?: AbortSignal) {
     return apiFetch<ListMessagesResponse>(
-        `/conversations/${conversationId}/messages`,
+        `/conversation/${conversationId}/messages`,
         { signal },
     );
 }
 
 export async function sendMessage(input: SendMessageRequest) {
     return apiFetch<SendMessageResponse>(
-        `/conversations/${input.conversationId}/messages`,
+        "/message/messages",
         {
             method: "POST",
-            body: { content: input.content },
+            body: {
+                id: crypto.randomUUID(),
+                conversationId: input.conversationId,
+                role: "user",
+                content: input.content,
+            },
         },
     );
 }

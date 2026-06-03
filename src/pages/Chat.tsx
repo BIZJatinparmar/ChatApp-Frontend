@@ -1,12 +1,19 @@
 import { InputBox } from "../components/InputBox";
-import { Loader2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Loader2, Send } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router";
 import { useMessages } from "../hooks/useMessages";
 import { useSendMessage } from "../hooks/useSendMessage";
 import ReactMarkdown from "react-markdown";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createBudgetRequest,
+  listMyBudgetRequests,
+} from "../api/budgetRequests";
+import { ApiError } from "../api/client";
 
 import remarkGfm from "remark-gfm";
+import { MessageRow } from "../components/Message";
 
 export function Chat() {
   const { threadId } = useParams();
@@ -24,30 +31,37 @@ export function Chat() {
 
 type ChatListProps = {
   threadId: string;
-  state: any;
+  state: unknown;
 };
 const ChatList = ({ threadId, state }: ChatListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   const { data: thread, isLoading } = useMessages(threadId, {
     enabled: !!threadId,
   });
 
-  const { sendMessage, isStreaming, streamedText } = useSendMessage(threadId);
+  const { sendMessage, isStreaming, streamedText, error } =
+    useSendMessage(threadId);
+
+  const budgetRequestsQuery = useQuery({
+    queryKey: ["my-budget-requests"],
+    queryFn: ({ signal }) => listMyBudgetRequests(signal),
+  });
 
   const isFirstTime = useRef(true);
   // When thread is first loaded and only has user's first message, generate response
   useEffect(() => {
-    if (state && state.message && state.new && isFirstTime.current) {
+    if (isNewChatState(state) && isFirstTime.current) {
       isFirstTime.current = false;
-      sendMessage(state.message);
+      void sendMessage(state.message).catch(() => undefined);
     }
-  }, [state]);
+  }, [sendMessage, state]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [thread?.messages, isStreaming]);
+  }, [streamedText, thread?.messages, isStreaming]);
 
   if (isLoading || !thread) {
     return (
@@ -61,52 +75,20 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 w-full flex flex-col items-center">
         <div className="w-full max-w-[800px] flex flex-col pb-8 pt-8 gap-6">
-          {thread.messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex w-full ${message.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-5 py-3 ${
-                  message.role === "user"
-                    ? "bg-[#f0eded] text-[#1b1b1b]"
-                    : "bg-transparent text-[#1b1b1b]"
-                }`}
-              >
-                {message.role === "assistant" && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded bg-[#4648d4] text-white flex items-center justify-center text-xs font-bold">
-                      C
-                    </div>
-                    <span className="font-medium">Assistant</span>
-                  </div>
-                )}
-
-                {!message.content && (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                      style={{ animationDelay: "0ms" }}
-                    />
-                    <div
-                      className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                      style={{ animationDelay: "150ms" }}
-                    />
-                    <div
-                      className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    />
-                  </div>
-                )}
-
-                <div className="prose prose-sm max-w-none dark:prose-invert text-black">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-          ))}
+          {thread.messages
+            .filter((message, index) => {
+              if (
+                index === thread.messages.length - 1 &&
+                isStreaming &&
+                message.role === "assistant"
+              ) {
+                return false;
+              }
+              return true;
+            })
+            .map((message) => {
+              return <MessageRow key={message.id} message={message} />;
+            })}
 
           {isStreaming && (
             <div key={streamedText} className={`flex w-full  "justify-start"`}>
@@ -153,9 +135,23 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
 
       <div className="w-full flex-shrink-0 flex flex-col items-center px-4 sm:px-6 pb-6 pt-2 bg-gradient-to-t from-[#fcf9f8] via-[#fcf9f8] to-transparent">
         <div className="w-full max-w-[800px]">
+          {isBudgetExceededError(error) && (
+            <BudgetRequestPanel
+              hasPendingRequest={(budgetRequestsQuery.data ?? []).some(
+                (request) => request.status === "pending",
+              )}
+              onSubmitted={() => {
+                void queryClient.invalidateQueries({
+                  queryKey: ["my-budget-requests"],
+                });
+              }}
+            />
+          )}
           <InputBox
-            onSubmit={(text, modelId) => sendMessage(text, modelId)}
-            isPending={isStreaming}
+            onSubmit={(text, modelId) =>
+              void sendMessage(text, modelId).catch(() => undefined)
+            }
+            isPending={isStreaming || isBudgetExceededError(error)}
             placeholder="Reply to assistant..."
           />
         </div>
@@ -163,3 +159,117 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
     </div>
   );
 };
+
+function isNewChatState(
+  state: unknown,
+): state is { message: string; new: boolean } {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    "message" in state &&
+    "new" in state &&
+    typeof (state as { message?: unknown }).message === "string" &&
+    Boolean((state as { new?: unknown }).new)
+  );
+}
+
+function isBudgetExceededError(error: unknown) {
+  if (!(error instanceof ApiError) || error.status !== 403) {
+    return false;
+  }
+
+  const detail =
+    typeof error.body === "object" && error.body && "detail" in error.body
+      ? (error.body as { detail?: unknown }).detail
+      : null;
+
+  return (
+    typeof detail === "object" &&
+    detail !== null &&
+    "code" in detail &&
+    (detail as { code?: unknown }).code === "TOKEN_BUDGET_EXCEEDED"
+  );
+}
+
+function BudgetRequestPanel({
+  hasPendingRequest,
+  onSubmitted,
+}: {
+  hasPendingRequest: boolean;
+  onSubmitted: () => void;
+}) {
+  const [requestedTokens, setRequestedTokens] = useState("100000");
+  const [note, setNote] = useState("");
+
+  const requestMutation = useMutation({
+    mutationFn: createBudgetRequest,
+    onSuccess: onSubmitted,
+  });
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    requestMutation.mutate({
+      requested_tokens: Number(requestedTokens) || 0,
+      note: note.trim() || null,
+    });
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900"
+    >
+      <div className="font-semibold">Token budget reached</div>
+      <div className="mt-1 text-red-800">
+        Request additional budget from your admin. Refresh the app after
+        approval to re-check access.
+      </div>
+
+      {hasPendingRequest && (
+        <div className="mt-2 rounded-md bg-white/70 px-3 py-2 text-red-800">
+          You already have a pending budget request.
+        </div>
+      )}
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-[160px_1fr_auto]">
+        <input
+          value={requestedTokens}
+          onChange={(event) => setRequestedTokens(event.target.value)}
+          min={1}
+          type="number"
+          disabled={hasPendingRequest || requestMutation.isPending}
+          className="h-10 rounded-md border border-red-200 bg-white px-3 text-sm text-[#1b1b1b] outline-none disabled:bg-[#f7f4f3]"
+        />
+        <input
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          maxLength={1000}
+          disabled={hasPendingRequest || requestMutation.isPending}
+          placeholder="Optional note"
+          className="h-10 rounded-md border border-red-200 bg-white px-3 text-sm text-[#1b1b1b] outline-none disabled:bg-[#f7f4f3]"
+        />
+        <button
+          type="submit"
+          disabled={hasPendingRequest || requestMutation.isPending}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#4648d4] px-4 text-sm font-semibold text-white hover:bg-[#393bb7] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Send size={15} />
+          {requestMutation.isPending ? "Sending..." : "Request"}
+        </button>
+      </div>
+
+      {requestMutation.error && (
+        <div className="mt-2 text-sm font-medium text-red-700">
+          {requestMutation.error instanceof Error
+            ? requestMutation.error.message
+            : "Request failed."}
+        </div>
+      )}
+      {requestMutation.isSuccess && (
+        <div className="mt-2 text-sm font-medium text-red-800">
+          Request sent to admin.
+        </div>
+      )}
+    </form>
+  );
+}

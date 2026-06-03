@@ -18,7 +18,9 @@ export type Message = {
 };
 
 export type CreateConversationResponse = {
-  conversation: Conversation;
+  id: string;
+  owner_id: string;
+  title: string;
 };
 
 export type ListConversationsResponse = {
@@ -35,8 +37,7 @@ export type SendMessageRequest = {
 };
 
 export type SendMessageResponse = {
-  userMessage: Message;
-  assistantMessage: Message;
+  message: Message;
 };
 
 export type AppRole = "admin" | "user";
@@ -53,6 +54,7 @@ export type User = {
   input_tokens: number;
   output_tokens: number;
   total_tokens: number;
+  token_budget: number;
 };
 
 export type AdminUserCreateInput = {
@@ -60,10 +62,47 @@ export type AdminUserCreateInput = {
   email?: string | null;
   role: AppRole;
   permissions: string[];
+  token_budget: number;
 };
 
 export type AdminUserUpdateInput = {
   role?: AppRole;
   is_active?: boolean;
   permissions?: string[];
+  token_budget?: number;
+};
+
+export type DailyUsagePoint = {
+  date: string;
+  active_users: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+};
+
+export type BudgetRequestStatus = "pending" | "approved" | "rejected";
+
+export type BudgetRequest = {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  requested_tokens: number;
+  status: BudgetRequestStatus;
+  note: string | null;
+  admin_note: string | null;
+  decided_by_user_id: string | null;
+  decided_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BudgetRequestCreateInput = {
+  requested_tokens: number;
+  note?: string | null;
+};
+
+export type BudgetRequestAdminUpdateInput = {
+  status: BudgetRequestStatus;
+  approved_tokens?: number | null;
+  admin_note?: string | null;
 };

@@ -8,7 +8,8 @@ type StreamChunk =
     }
   | {
       type: "error";
-      error: string;
+      error?: string;
+      message?: string;
     };
 
 export async function* readNdjsonStream(
@@ -49,7 +50,7 @@ export async function* readNdjsonStream(
     }
 
     if (parsed.type === "error") {
-      throw new Error(parsed.error);
+      throw new Error(parsed.error ?? parsed.message ?? "Stream failed");
     }
 
     if (parsed.type === "token") {

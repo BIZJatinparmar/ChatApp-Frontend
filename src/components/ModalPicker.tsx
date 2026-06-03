@@ -27,7 +27,7 @@ export function ModelPicker({
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative " ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#c7c4d7] bg-[#f6f3f2] text-[#464554] hover:bg-[#f0eded] transition-colors text-sm font-medium group/model"
@@ -40,7 +40,7 @@ export function ModelPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mt-2 w-56 bg-white border border-[#e2e2e1] rounded-xl shadow-lg overflow-hidden z-50">
+        <div className="absolute bottom-full left-0 mt-2 w-56 bg-white border border-[#e2e2e1] rounded-xl shadow-lg z-50 max-h-[300px] overflow-auto">
           <div className="p-2 flex flex-col gap-1">
             {MODELS.map((model) => (
               <button

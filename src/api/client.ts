@@ -1,4 +1,4 @@
-const API_BASE_URL =
+export const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL?.toString() ?? "http://localhost:8000";
 
 export class ApiError extends Error {
@@ -42,7 +42,7 @@ export async function apiFetch<T>(
     if (!res.ok) {
         const message =
             typeof body === "object" && body && "detail" in body
-                ? String((body as any).detail)
+                ? String((body as { detail: unknown }).detail)
                 : `Request failed: ${res.status}`;
         throw new ApiError(message, res.status, body);
     }

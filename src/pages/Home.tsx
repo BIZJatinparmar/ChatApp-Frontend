@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { InputBox } from "../components/InputBox";
 import { PromptSuggestions } from "../components/PromptSuggestion";
-import { apiFetch } from "../api/client";
+import { createConversation } from "../api/conversations";
 import { useMutation } from "@tanstack/react-query";
 
 export function Home() {
@@ -10,13 +10,7 @@ export function Home() {
   const { mutate, isPending } = useMutation({
     mutationFn: async (text: string) => {
       const id = crypto.randomUUID();
-      await apiFetch("/conversations", {
-        method: "POST",
-        body: {
-          id: id,
-          title: "",
-        },
-      });
+      await createConversation(id);
       return { id, text };
     },
     onSuccess: ({ id, text }) => {
