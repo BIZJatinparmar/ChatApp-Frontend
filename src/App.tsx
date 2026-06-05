@@ -10,6 +10,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import type { PublicClientApplication } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
 import { AuthRedirect } from "./pages/AuthRedirect";
+import { ChatStreamProvider } from "./hooks/useSendMessage";
 
 const queryClient = new QueryClient();
 
@@ -20,23 +21,25 @@ export default function App({ msalInstance }: AppProps) {
   return (
     <MsalProvider instance={msalInstance}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="login-redirect" element={<AuthRedirect />} />
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedRoute />}>
-                <Route element={<RootLayout />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/c/:threadId" element={<Chat />} />
-                  <Route element={<ProtectedRoute adminOnly />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
+        <ChatStreamProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="login-redirect" element={<AuthRedirect />} />
+                <Route path="/login" element={<Login />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<RootLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/c/:threadId" element={<Chat />} />
+                    <Route element={<ProtectedRoute adminOnly />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </ChatStreamProvider>
       </QueryClientProvider>
     </MsalProvider>
   );

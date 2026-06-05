@@ -2,13 +2,19 @@ import { LayoutDashboard, Menu } from "lucide-react";
 import { Link } from "react-router";
 import { useAuth } from "../auth/AuthContext";
 
-export function Header() {
+type HeaderProps = {
+  toggleSidebar?: () => void;
+};
+export function Header({ toggleSidebar }: HeaderProps) {
   const { user } = useAuth();
 
   return (
     <header className="bg-[#fcf9f8] w-full sticky top-0 border-b border-[#e2e2e2] flex justify-between items-center h-14 px-6 z-10">
       <div className="flex items-center gap-4">
-        <button className="md:hidden text-[#464554] hover:bg-[#f0eded] p-1 rounded-md transition-colors">
+        <button
+          className="md:hidden text-[#464554] hover:bg-[#f0eded] p-1 rounded-md transition-colors"
+          onClick={toggleSidebar}
+        >
           <Menu size={20} />
         </button>
         <Link

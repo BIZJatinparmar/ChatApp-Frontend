@@ -3,23 +3,27 @@ import { InputBox } from "../components/InputBox";
 import { PromptSuggestions } from "../components/PromptSuggestion";
 import { createConversation } from "../api/conversations";
 import { useMutation } from "@tanstack/react-query";
+import { useChatStreams } from "../hooks/useSendMessage";
 
 export function Home() {
   const navigate = useNavigate();
+  const { sendMessage } = useChatStreams();
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async (text: string) => {
+    mutationFn: async ({
+      text,
+      modelId,
+    }: {
+      text: string;
+      modelId: string;
+    }) => {
       const id = crypto.randomUUID();
       await createConversation(id);
-      return { id, text };
+      void sendMessage(id, text, modelId).catch(() => undefined);
+      return { id };
     },
-    onSuccess: ({ id, text }) => {
-      navigate(`/c/${id}`, {
-        state: {
-          message: text,
-          new: true,
-        },
-      });
+    onSuccess: ({ id }) => {
+      navigate(`/c/${id}`);
     },
   });
 
@@ -29,8 +33,13 @@ export function Home() {
         <h1 className="text-[40px] font-semibold text-[#1b1b1b] mb-12 text-center tracking-tight leading-[1.2]">
           How can I help you today?
         </h1>
-        <InputBox onSubmit={(text) => mutate(text)} isPending={isPending} />
-        <PromptSuggestions onSelect={(text) => mutate(text)} />
+        <InputBox
+          onSubmit={(text, modelId) => mutate({ text, modelId })}
+          isPending={isPending}
+        />
+        <PromptSuggestions
+          onSelect={(text) => mutate({ text, modelId: "gpt-5-nano" })}
+        />
       </div>
     </div>
   );

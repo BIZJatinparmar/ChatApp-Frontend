@@ -1,12 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, LogOut, Menu, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { listConversations } from "../api/conversations";
 import { useAuth } from "../auth/AuthContext";
 
-export function Sidebar() {
-  const [isExpanded, setIsExpanded] = useState(false);
+type SidebarProps = {
+  isExpanded: boolean;
+  toggleSideBar: () => void;
+};
+export function Sidebar({ isExpanded, toggleSideBar }: SidebarProps) {
   const navigate = useNavigate();
   const { user, logoutUser } = useAuth();
 
@@ -17,15 +25,17 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-[#fcf9f8] border-r border-[#e2e2e2] flex-col p-3 gap-4 hidden md:flex shrink-0 items-start transition-all duration-300 ease-in-out max-h-screen overflow-auto ${
-        isExpanded ? "w-64" : "w-16 items-center"
-      }`}
+      className={`bg-[#fcf9f8] border-r border-[#e2e2e2] flex flex-col p-3 gap-4 shrink-0 items-start transition-all duration-300 ease-in-out max-h-screen overflow-auto absolute -translate-x-full md:translate-x-0 md:top-0
+          md:relative ${
+            isExpanded ? "md:w-64 z-20 translate-x-0" : "md:w-16 items-center "
+          }`}
     >
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => toggleSideBar()}
         className={`p-2 hover:bg-[#f0eded] rounded-md transition-colors text-[#464554] ${isExpanded ? "self-start" : ""}`}
       >
-        <Menu size={20} />
+        <Menu size={20} className="hidden md:block" />
+        <ArrowLeft size={20} className="block md:hidden" />
       </button>
 
       <nav className="flex-1 w-full flex flex-col gap-4 mt-2">

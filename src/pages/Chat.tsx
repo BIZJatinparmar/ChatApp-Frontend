@@ -1,7 +1,7 @@
 import { InputBox } from "../components/InputBox";
 import { Loader2, Send } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router";
 import { useMessages } from "../hooks/useMessages";
 import { useSendMessage } from "../hooks/useSendMessage";
 import ReactMarkdown from "react-markdown";
@@ -14,13 +14,13 @@ import { ApiError } from "../api/client";
 
 import remarkGfm from "remark-gfm";
 import { MessageRow } from "../components/Message";
+import type { Message } from "../api/types";
 
 export function Chat() {
   const { threadId } = useParams();
-  const { state } = useLocation();
 
   if (threadId) {
-    return <ChatList threadId={threadId} state={state} />;
+    return <ChatList threadId={threadId} />;
   }
   return (
     <div className="flex-1 flex items-center justify-center">
@@ -31,9 +31,8 @@ export function Chat() {
 
 type ChatListProps = {
   threadId: string;
-  state: unknown;
 };
-const ChatList = ({ threadId, state }: ChatListProps) => {
+const ChatList = ({ threadId }: ChatListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -41,22 +40,13 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
     enabled: !!threadId,
   });
 
-  const { sendMessage, isStreaming, streamedText, error } =
+  const { sendMessage, isStreaming, streamedText, error, optimisticMessages } =
     useSendMessage(threadId);
 
   const budgetRequestsQuery = useQuery({
     queryKey: ["my-budget-requests"],
     queryFn: ({ signal }) => listMyBudgetRequests(signal),
   });
-
-  const isFirstTime = useRef(true);
-  // When thread is first loaded and only has user's first message, generate response
-  useEffect(() => {
-    if (isNewChatState(state) && isFirstTime.current) {
-      isFirstTime.current = false;
-      void sendMessage(state.message).catch(() => undefined);
-    }
-  }, [sendMessage, state]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -71,14 +61,16 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
     );
   }
 
+  const displayedMessages = mergeMessages(thread.messages, optimisticMessages);
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 w-full flex flex-col items-center">
         <div className="w-full max-w-[800px] flex flex-col pb-8 pt-8 gap-6">
-          {thread.messages
+          {displayedMessages
             .filter((message, index) => {
               if (
-                index === thread.messages.length - 1 &&
+                index === displayedMessages.length - 1 &&
                 isStreaming &&
                 message.role === "assistant"
               ) {
@@ -160,17 +152,13 @@ const ChatList = ({ threadId, state }: ChatListProps) => {
   );
 };
 
-function isNewChatState(
-  state: unknown,
-): state is { message: string; new: boolean } {
-  return (
-    typeof state === "object" &&
-    state !== null &&
-    "message" in state &&
-    "new" in state &&
-    typeof (state as { message?: unknown }).message === "string" &&
-    Boolean((state as { new?: unknown }).new)
+function mergeMessages(messages: Message[], optimisticMessages: Message[]) {
+  const messageIds = new Set(messages.map((message) => message.id));
+  const missingOptimisticMessages = optimisticMessages.filter(
+    (message) => !messageIds.has(message.id),
   );
+
+  return [...messages, ...missingOptimisticMessages];
 }
 
 function isBudgetExceededError(error: unknown) {
@@ -206,7 +194,7 @@ function BudgetRequestPanel({
     onSuccess: onSubmitted,
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     requestMutation.mutate({
       requested_tokens: Number(requestedTokens) || 0,
