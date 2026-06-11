@@ -66,7 +66,6 @@ function reducer(state: State, action: Action): State {
 
   switch (action.type) {
     case "START":
-      console.log("START", action);
       return {
         ...state,
         [action.conversationId]: {
@@ -80,7 +79,6 @@ function reducer(state: State, action: Action): State {
       };
 
     case "APPEND_STREAM":
-      console.log("APPEND_STREAM", action.conversationId);
       return {
         ...state,
         [action.conversationId]: {
@@ -90,7 +88,6 @@ function reducer(state: State, action: Action): State {
       };
 
     case "ADVANCE_DISPLAY":
-      console.log("ADVANCE_DISPLAY", action.conversationId);
       return {
         ...state,
         [action.conversationId]: {
@@ -100,7 +97,6 @@ function reducer(state: State, action: Action): State {
       };
 
     case "FINISH":
-      console.log("FINISH", action.conversationId);
       return {
         ...state,
         [action.conversationId]: {
@@ -110,7 +106,6 @@ function reducer(state: State, action: Action): State {
       };
 
     case "ERROR":
-      console.log("ERROR", action.conversationId);
       return {
         ...state,
         [action.conversationId]: {
@@ -122,7 +117,6 @@ function reducer(state: State, action: Action): State {
       };
 
     case "RESET": {
-      console.log("RESET", action.conversationId);
       const next = { ...state };
       delete next[action.conversationId];
       return next;
@@ -157,14 +151,10 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
     const frameIds: number[] = [];
     const timeoutIds: number[] = [];
 
-    console.log("Streams", streams);
     for (const [conversationId, stream] of Object.entries(streams)) {
       if (!stream.isStreaming) {
         continue;
       }
-      console.log(displayIndexRefs.current[conversationId]);
-      console.log(streamFinishedRefs.current[conversationId]);
-      console.log("STREAM LENGTH", stream.streamedText.length);
 
       if (streamFinishedRefs.current[conversationId]) {
         if (stream.displayedText === stream.streamedText) {
@@ -184,7 +174,6 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
         (displayIndexRefs.current[conversationId] ?? 0) <
         stream.streamedText.length
       ) {
-        console.log("REQUESTING ANIMATION FRAME");
         const frameId = window.requestAnimationFrame(() => {
           const nextIndex = (displayIndexRefs.current[conversationId] ?? 0) + 4;
           displayIndexRefs.current[conversationId] = nextIndex;
@@ -200,7 +189,6 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
     }
 
     return () => {
-      console.log("return useeffect");
       frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
       timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
@@ -296,6 +284,7 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
         );
 
         streamFinishedRefs.current[conversationId] = true;
+        console.warn("Full streamed text:", fullText);
         return fullText;
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {

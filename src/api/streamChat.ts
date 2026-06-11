@@ -56,7 +56,10 @@ export async function* readNdjsonStream(
     if (parsed.type === "token") {
       return {
         shouldStop: false,
-        chunk: parsed,
+        chunk: {
+          ...parsed,
+          content: parsed.content.replace(/\n{2,}/g, "\n"),
+        },
       };
     }
 
@@ -65,7 +68,6 @@ export async function* readNdjsonStream(
 
   try {
     while (true) {
-      console.log("inside while");
       if (signal.aborted) {
         return;
       }
@@ -89,6 +91,7 @@ export async function* readNdjsonStream(
       buffer += decoder.decode(value, { stream: true });
 
       const lines = buffer.split(/\r?\n/);
+      console.log("Received lines:", lines);
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
@@ -104,7 +107,6 @@ export async function* readNdjsonStream(
       }
     }
   } finally {
-    console.log("Exiting while");
     signal.removeEventListener("abort", abortReader);
     reader.releaseLock();
   }
