@@ -66,7 +66,7 @@ const ChatList = ({ threadId }: ChatListProps) => {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 w-full flex flex-col items-center">
-        <div className="w-full max-w-[800px] flex flex-col pb-8 pt-8 gap-6">
+        <div className="w-full max-w-200 flex flex-col pb-8 pt-8 gap-6">
           {displayedMessages
             .filter((message, index) => {
               if (
@@ -125,8 +125,8 @@ const ChatList = ({ threadId }: ChatListProps) => {
         </div>
       </div>
 
-      <div className="w-full flex-shrink-0 flex flex-col items-center px-4 sm:px-6 pb-6 pt-2 bg-gradient-to-t from-[#fcf9f8] via-[#fcf9f8] to-transparent">
-        <div className="w-full max-w-[800px]">
+      <div className="w-full shrink-0 flex flex-col items-center px-4 sm:px-6 pb-6 pt-2 bg-linear-to-t from-[#fcf9f8] via-[#fcf9f8] to-transparent">
+        <div className="w-full max-w-200">
           {isBudgetExceededError(error) && (
             <BudgetRequestPanel
               hasPendingRequest={(budgetRequestsQuery.data ?? []).some(
@@ -140,8 +140,8 @@ const ChatList = ({ threadId }: ChatListProps) => {
             />
           )}
           <InputBox
-            onSubmit={(text, modelId) =>
-              void sendMessage(text, modelId).catch(() => undefined)
+            onSubmit={(text, modelId, chatMode) =>
+              void sendMessage(text, modelId, chatMode).catch(() => undefined)
             }
             isPending={isStreaming || isBudgetExceededError(error)}
             placeholder="Reply to assistant..."

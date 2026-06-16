@@ -12,6 +12,7 @@ import type { ListMessagesResponse, Message } from "../api/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { readNdjsonStream } from "../api/streamChat";
 import { API_BASE_URL, ApiError } from "../api/client";
+import type { CHAT_MODES } from "../constants";
 
 type BudgetExceededDetail = {
   code: "TOKEN_BUDGET_EXCEEDED";
@@ -133,6 +134,7 @@ type ChatStreamContextValue = {
     conversationId: string,
     message: string,
     modelId?: string,
+    chatMode?: (typeof CHAT_MODES)[number]["value"],
   ) => Promise<string | undefined>;
   cancel: (conversationId: string) => void;
 };
@@ -195,7 +197,13 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
   }, [streams]);
 
   const sendMessage = useCallback(
-    async (conversationId: string, message: string, modelId = "gpt-5-nano") => {
+    async (
+      conversationId: string,
+      message: string,
+      modelId = "gpt-5-nano",
+      _chatMode?: (typeof CHAT_MODES)[number]["value"],
+    ) => {
+      const chatMode = _chatMode ?? "auto";
       abortRefs.current[conversationId]?.abort();
 
       const ac = new AbortController();
@@ -232,6 +240,7 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
             conversation_id: conversationId,
             user_content: userMessage.content,
             model_id: modelId,
+            chat_mode: chatMode,
           }),
           signal: ac.signal,
         });
@@ -364,8 +373,11 @@ export function useSendMessage(conversationId: string) {
   const stream = getStreamState(streams, conversationId);
 
   return {
-    sendMessage: (message: string, modelId?: string) =>
-      sendMessage(conversationId, message, modelId),
+    sendMessage: (
+      message: string,
+      modelId?: string,
+      chatMode?: (typeof CHAT_MODES)[number]["value"],
+    ) => sendMessage(conversationId, message, modelId, chatMode),
     streamedText: stream.displayedText,
     isStreaming: stream.isStreaming,
     error: stream.error,

@@ -13,7 +13,12 @@ import {
   updateAdminBudgetRequest,
 } from "../api/budgetRequests";
 import { ApiError } from "../api/client";
-import type { AppRole, BudgetRequest, DailyUsagePoint, User } from "../api/types";
+import type {
+  AppRole,
+  BudgetRequest,
+  DailyUsagePoint,
+  User,
+} from "../api/types";
 
 const defaultPermissions = [
   "chat:use",
@@ -21,6 +26,7 @@ const defaultPermissions = [
   "conversation:write",
   "message:write",
   "files:upload",
+  "document:manage",
 ];
 
 type EditableUser = {
@@ -166,9 +172,9 @@ export function Dashboard() {
   );
   const [tokenBudget, setTokenBudget] = useState("100000");
   const [edits, setEdits] = useState<Record<string, EditableUser>>({});
-  const [approvalAmounts, setApprovalAmounts] = useState<Record<string, string>>(
-    {},
-  );
+  const [approvalAmounts, setApprovalAmounts] = useState<
+    Record<string, string>
+  >({});
 
   const usersQuery = useQuery({
     queryKey: ["admin-users"],
@@ -181,7 +187,7 @@ export function Dashboard() {
   });
 
   const dailyUsageQuery = useQuery({
-    queryKey: ["admin-daily-usage", 30],
+    queryKey: ["admin-daily-usagey", 30],
     queryFn: ({ signal }) => getAdminDailyUsage(30, signal),
   });
 
@@ -232,7 +238,9 @@ export function Dashboard() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin-budget-requests"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-budget-requests"],
+      });
       void queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
@@ -512,7 +520,9 @@ export function Dashboard() {
                               request.status !== "pending" ||
                               decideBudgetRequestMutation.isPending
                             }
-                            onClick={() => decideBudgetRequest(request, "approved")}
+                            onClick={() =>
+                              decideBudgetRequest(request, "approved")
+                            }
                             className="h-9 rounded-md border border-[#4648d4] px-3 text-sm font-medium text-[#4648d4] hover:bg-[#f3f3ff] disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Approve
@@ -523,7 +533,9 @@ export function Dashboard() {
                               request.status !== "pending" ||
                               decideBudgetRequestMutation.isPending
                             }
-                            onClick={() => decideBudgetRequest(request, "rejected")}
+                            onClick={() =>
+                              decideBudgetRequest(request, "rejected")
+                            }
                             className="h-9 rounded-md border border-[#d4d4d8] px-3 text-sm font-medium text-[#464554] hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Reject
@@ -544,7 +556,9 @@ export function Dashboard() {
           </div>
 
           {usersQuery.isLoading ? (
-            <div className="px-4 py-8 text-sm text-[#5d5f5e]">Loading users...</div>
+            <div className="px-4 py-8 text-sm text-[#5d5f5e]">
+              Loading users...
+            </div>
           ) : usersQuery.error ? (
             <div className="px-4 py-8 text-sm text-red-700">
               {getErrorMessage(usersQuery.error)}
@@ -573,7 +587,9 @@ export function Dashboard() {
                           <div className="font-medium text-[#1b1b1b]">
                             {user.email ?? "No email"}
                           </div>
-                          <div className="text-xs text-[#767586]">{user.id}</div>
+                          <div className="text-xs text-[#767586]">
+                            {user.id}
+                          </div>
                         </td>
                         <td className="max-w-[180px] px-4 py-3 align-top text-xs text-[#464554]">
                           <span className="block truncate">

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -64,6 +65,18 @@ export function Sidebar({ isExpanded, toggleSideBar }: SidebarProps) {
               </span>
             </Link>
           ))}
+        <Link
+          to="/documents"
+          className={`text-[#5d5f5e] hover:text-[#1b1b1b] hover:bg-[#e5e2e1]/50 rounded-lg flex items-center h-10 transition-all ${isExpanded ? "px-3 justify-start gap-3" : "justify-center w-10"}`}
+          title="Documents"
+        >
+          <FileText size={20} className="shrink-0" />
+          {isExpanded && (
+            <span className="font-medium text-[15px] whitespace-nowrap">
+              Documents
+            </span>
+          )}
+        </Link>
         {user?.role === "admin" && (
           <Link
             to="/dashboard"

@@ -1,9 +1,15 @@
-import { Paperclip, ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ModelPicker } from "./ModalPicker";
 import { MODELS } from "../../model-list";
+import { SelectBox } from "./ui/select";
+import { CHAT_MODES } from "../constants";
 interface InputBoxProps {
-  onSubmit: (text: string, modelId: string) => void;
+  onSubmit: (
+    text: string,
+    modelId: string,
+    chatMode: (typeof CHAT_MODES)[number]["value"],
+  ) => void;
   isPending?: boolean;
   placeholder?: string;
 }
@@ -16,10 +22,12 @@ export function InputBox({
   const [isFocused, setIsFocused] = useState(false);
   const [text, setText] = useState("");
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const [selectedMode, setSelectedMode] =
+    useState<(typeof CHAT_MODES)[number]["value"]>("auto");
 
   const handleSubmit = () => {
     if (text.trim() && !isPending) {
-      onSubmit(text, selectedModel.id);
+      onSubmit(text, selectedModel.id, selectedMode);
       setText("");
     }
   };
@@ -50,12 +58,11 @@ export function InputBox({
         disabled={isPending}
       />
       <div className="flex justify-between items-center px-2 pb-1 mt-2">
-        <button
-          className="text-[#767586] hover:text-[#1b1b1b] p-2 rounded-full hover:bg-[#f6f3f2] transition-colors flex items-center justify-center disabled:opacity-50"
-          disabled={isPending}
-        >
-          <Paperclip size={20} />
-        </button>
+        <SelectBox
+          options={CHAT_MODES}
+          selectedValue={selectedMode}
+          onModelChange={(mode) => setSelectedMode(mode)}
+        />
         <div className="flex flex-row gap-2 items-center">
           <div className="px-3 pt-2 pb-1 relative z-20">
             <ModelPicker

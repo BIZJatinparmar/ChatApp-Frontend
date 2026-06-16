@@ -106,3 +106,21 @@ export type BudgetRequestAdminUpdateInput = {
   approved_tokens?: number | null;
   admin_note?: string | null;
 };
+
+export type DocumentStatus = "processing" | "ready" | "failed";
+
+export type UserDocument = {
+  id: string;
+  filename: string;
+  content_type: string;
+  filetype: "pdf" | "txt" | string;
+  size_bytes: number;
+  status: DocumentStatus | string;
+  chunk_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DocumentListResponse = {
+  documents: UserDocument[];
+};

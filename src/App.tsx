@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Chat } from "./pages/Chat";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
+import { Documents } from "./pages/Documents";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
@@ -31,6 +32,7 @@ export default function App({ msalInstance }: AppProps) {
                   <Route element={<RootLayout />}>
                     <Route path="/" element={<Home />} />
                     <Route path="/c/:threadId" element={<Chat />} />
+                    <Route path="/documents" element={<Documents />} />
                     <Route element={<ProtectedRoute adminOnly />}>
                       <Route path="/dashboard" element={<Dashboard />} />
                     </Route>
