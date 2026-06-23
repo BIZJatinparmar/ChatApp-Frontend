@@ -10,7 +10,7 @@ type SelectBoxProps<T> = {
   selectedValue: T;
   readonly options: readonly SelectOption<T>[];
 };
-export function SelectBox<T extends Object | string>({
+export function SelectBox<T extends object | string>({
   onModelChange,
   selectedValue,
   options,

@@ -1,7 +1,17 @@
-type StreamChunk =
+import type { Citation } from "./types";
+
+export type StreamChunk =
   | {
       type: "token";
       content: string;
+    }
+  | {
+      type: "status";
+      status: string;
+    }
+  | {
+      type: "citation";
+      citation: Citation;
     }
   | {
       type: "done";
@@ -15,7 +25,7 @@ type StreamChunk =
 export async function* readNdjsonStream(
   response: Response,
   signal: AbortSignal,
-): AsyncGenerator<{ type: "token"; content: string }> {
+): AsyncGenerator<Extract<StreamChunk, { type: "token" | "citation" | "status" }>> {
   if (!response.body) {
     throw new Error("Response body is empty");
   }
@@ -30,9 +40,10 @@ export async function* readNdjsonStream(
 
   signal.addEventListener("abort", abortReader, { once: true });
 
-  const processLine = (
-    line: string,
-  ): { shouldStop: boolean; chunk?: { type: "token"; content: string } } => {
+  const processLine = (line: string): {
+    shouldStop: boolean;
+    chunk?: Extract<StreamChunk, { type: "token" | "citation" | "status" }>;
+  } => {
     const trimmed = line.trim();
 
     if (!trimmed) {
@@ -60,6 +71,13 @@ export async function* readNdjsonStream(
           ...parsed,
           content: parsed.content.replace(/\n{2,}/g, "\n"),
         },
+      };
+    }
+
+    if (parsed.type === "citation" || parsed.type === "status") {
+      return {
+        shouldStop: false,
+        chunk: parsed,
       };
     }
 
@@ -91,7 +109,6 @@ export async function* readNdjsonStream(
       buffer += decoder.decode(value, { stream: true });
 
       const lines = buffer.split(/\r?\n/);
-      console.log("Received lines:", lines);
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {

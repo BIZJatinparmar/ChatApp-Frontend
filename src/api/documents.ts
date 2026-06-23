@@ -33,8 +33,15 @@ export async function uploadDocument(file: File): Promise<UserDocument> {
   return body as UserDocument;
 }
 
-export function getDocumentPreviewUrl(documentId: string) {
-  return `${API_BASE_URL}/document/${encodeURIComponent(documentId)}/preview`;
+export function getDocumentPreviewUrl(documentId: string, page?: number | string | null) {
+  const url = `${API_BASE_URL}/document/${encodeURIComponent(documentId)}/preview`;
+  const pageNumber = Number(page);
+
+  if (Number.isFinite(pageNumber) && pageNumber > 0) {
+    return `${url}#page=${pageNumber}`;
+  }
+
+  return url;
 }
 
 async function parseBody(res: Response) {

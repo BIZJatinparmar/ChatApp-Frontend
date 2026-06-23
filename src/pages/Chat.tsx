@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { useMessages } from "../hooks/useMessages";
 import { useSendMessage } from "../hooks/useSendMessage";
-import ReactMarkdown from "react-markdown";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createBudgetRequest,
@@ -12,7 +11,6 @@ import {
 } from "../api/budgetRequests";
 import { ApiError } from "../api/client";
 
-import remarkGfm from "remark-gfm";
 import { MessageRow } from "../components/Message";
 import type { Message } from "../api/types";
 
@@ -40,8 +38,14 @@ const ChatList = ({ threadId }: ChatListProps) => {
     enabled: !!threadId,
   });
 
-  const { sendMessage, isStreaming, streamedText, error, optimisticMessages } =
-    useSendMessage(threadId);
+  const {
+    sendMessage,
+    isStreaming,
+    streamedText,
+    citations,
+    error,
+    optimisticMessages,
+  } = useSendMessage(threadId);
 
   const budgetRequestsQuery = useQuery({
     queryKey: ["my-budget-requests"],
@@ -51,7 +55,7 @@ const ChatList = ({ threadId }: ChatListProps) => {
   // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [streamedText, thread?.messages, isStreaming]);
+  }, [streamedText, citations, thread?.messages, isStreaming]);
 
   if (isLoading || !thread) {
     return (
@@ -83,42 +87,20 @@ const ChatList = ({ threadId }: ChatListProps) => {
             })}
 
           {isStreaming && (
-            <div key={streamedText} className={`flex w-full  "justify-start"`}>
-              <div
-                className={`max-w-[80%] rounded-2xl px-5 py-3 ${"bg-transparent text-[#1b1b1b]"}`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded bg-[#4648d4] text-white flex items-center justify-center text-xs font-bold">
-                    C
-                  </div>
-                  <span className="font-medium">Assistant</span>
-                </div>
-
-                <div className="whitespace-pre-wrap leading-relaxed">
-                  {!streamedText && (
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      />
-                      <div
-                        className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      />
-                      <div
-                        className="w-2 h-2 rounded-full bg-[#c7c4d7] animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      />
-                    </div>
-                  )}
-                  <div className="prose prose-sm max-w-none dark:prose-invert text-black">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {streamedText}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MessageRow
+              key="streaming-assistant"
+              message={{
+                id: "streaming-assistant",
+                conversationId: threadId,
+                role: "assistant",
+                content: streamedText,
+                payloadJson: {
+                  citations,
+                  citation_count: citations.length,
+                },
+                createdAt: new Date().toISOString(),
+              }}
+            />
           )}
 
           <div ref={messagesEndRef} />

@@ -13,8 +13,23 @@ export type Message = {
   conversationId: string;
   role: Role;
   content: string;
-  payloadJson: string;
+  payloadJson: MessagePayload | string | null;
   createdAt: string; // ISO
+};
+
+export type Citation = {
+  index: number;
+  documentId: string;
+  fileName: string;
+  page?: number | string | null;
+  quote?: string | null;
+  previewUrl?: string;
+};
+
+export type MessagePayload = {
+  citations?: Citation[];
+  citation_count?: number;
+  [key: string]: unknown;
 };
 
 export type CreateConversationResponse = {

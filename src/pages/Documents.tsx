@@ -6,16 +6,15 @@ import {
   FileText,
   Loader2,
   Upload,
-  X,
 } from "lucide-react";
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import {
-  getDocumentPreviewUrl,
   listDocuments,
   uploadDocument,
 } from "../api/documents";
 import { ApiError } from "../api/client";
 import type { UserDocument } from "../api/types";
+import { DocumentPreviewModal } from "../components/DocumentPreviewModal";
 
 const acceptedTypes = ".pdf,.txt,application/pdf,text/plain";
 
@@ -192,48 +191,14 @@ export function Documents() {
       </div>
 
       {previewDocument && (
-        <PreviewModal
-          document={previewDocument}
+        <DocumentPreviewModal
+          documentId={previewDocument.id}
+          filename={previewDocument.filename}
+          contentType={previewDocument.content_type}
           onClose={() => setPreviewDocument(null)}
         />
       )}
     </main>
-  );
-}
-
-function PreviewModal({
-  document,
-  onClose,
-}: {
-  document: UserDocument;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between gap-3 border-b border-[#e2e2e2] px-4 py-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-[#1b1b1b]">
-              {document.filename}
-            </h2>
-            <div className="text-xs text-[#767586]">{document.content_type}</div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#464554] hover:bg-[#f0eded]"
-            aria-label="Close preview"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <iframe
-          title={`Preview ${document.filename}`}
-          src={getDocumentPreviewUrl(document.id)}
-          className="h-full w-full bg-white"
-        />
-      </div>
-    </div>
   );
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   type ReactNode,
@@ -8,7 +9,7 @@ import {
   useReducer,
   useRef,
 } from "react";
-import type { ListMessagesResponse, Message } from "../api/types";
+import type { Citation, ListMessagesResponse, Message } from "../api/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { readNdjsonStream } from "../api/streamChat";
 import { API_BASE_URL, ApiError } from "../api/client";
@@ -33,6 +34,7 @@ function isBudgetExceededDetail(value: unknown): value is BudgetExceededDetail {
 type StreamState = {
   streamedText: string;
   displayedText: string;
+  citations: Citation[];
   isStreaming: boolean;
   error: unknown;
   optimisticMessages: Message[];
@@ -43,6 +45,7 @@ type State = Record<string, StreamState>;
 type Action =
   | { type: "START"; conversationId: string; userMessage: Message }
   | { type: "APPEND_STREAM"; conversationId: string; text: string }
+  | { type: "ADD_CITATION"; conversationId: string; citation: Citation }
   | { type: "ADVANCE_DISPLAY"; conversationId: string; text: string }
   | { type: "FINISH"; conversationId: string }
   | { type: "ERROR"; conversationId: string; error: unknown }
@@ -51,6 +54,7 @@ type Action =
 const emptyStreamState: StreamState = {
   streamedText: "",
   displayedText: "",
+  citations: [],
   isStreaming: false,
   error: null,
   optimisticMessages: [],
@@ -75,6 +79,7 @@ function reducer(state: State, action: Action): State {
           error: null,
           streamedText: "",
           displayedText: "",
+          citations: [],
           optimisticMessages: [action.userMessage],
         },
       };
@@ -85,6 +90,15 @@ function reducer(state: State, action: Action): State {
         [action.conversationId]: {
           ...current,
           streamedText: current.streamedText + action.text,
+        },
+      };
+
+    case "ADD_CITATION":
+      return {
+        ...state,
+        [action.conversationId]: {
+          ...current,
+          citations: appendCitationIfMissing(current.citations, action.citation),
         },
       };
 
@@ -262,8 +276,23 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
         }
 
         let fullText = "";
+        let citations: Citation[] = [];
 
         for await (const chunk of readNdjsonStream(res, ac.signal)) {
+          if (chunk.type === "citation") {
+            citations = appendCitationIfMissing(citations, chunk.citation);
+            dispatch({
+              type: "ADD_CITATION",
+              conversationId,
+              citation: chunk.citation,
+            });
+            continue;
+          }
+
+          if (chunk.type !== "token") {
+            continue;
+          }
+
           fullText += chunk.content;
 
           dispatch({
@@ -278,7 +307,7 @@ export function ChatStreamProvider({ children }: { children: ReactNode }) {
           conversationId,
           role: "assistant",
           content: fullText,
-          payloadJson: "",
+          payloadJson: { citations, citation_count: citations.length },
           createdAt: new Date().toISOString(),
         };
 
@@ -364,6 +393,14 @@ function appendMessageIfMissing(messages: Message[], message: Message) {
   return [...messages, message];
 }
 
+function appendCitationIfMissing(citations: Citation[], citation: Citation) {
+  if (citations.some((existing) => existing.index === citation.index)) {
+    return citations;
+  }
+
+  return [...citations, citation].sort((a, b) => a.index - b.index);
+}
+
 export function useChatStreams() {
   return useChatStreamContext();
 }
@@ -379,6 +416,7 @@ export function useSendMessage(conversationId: string) {
       chatMode?: (typeof CHAT_MODES)[number]["value"],
     ) => sendMessage(conversationId, message, modelId, chatMode),
     streamedText: stream.displayedText,
+    citations: stream.citations,
     isStreaming: stream.isStreaming,
     error: stream.error,
     optimisticMessages: stream.optimisticMessages,
